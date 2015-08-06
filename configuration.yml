@@ -1,0 +1,5 @@
+
+
+mssql:
+    host: KRR-TST-PAHWL02\SQLEXPRESS
+    database: KRR-PA-INF-INFO
