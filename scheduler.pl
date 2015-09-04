@@ -281,6 +281,7 @@ package mssql;{
 				$values->{$ref->{'id'}}->{'name'} = $ref->{'name'};
 				$values->{$ref->{'id'}}->{'execute'} = $ref->{'execute'};
 				$values->{$ref->{'id'}}->{'enable'} = $ref->{'enable'};
+				$values->{$ref->{'id'}}->{'status'} = $ref->{'status'};
 				$values->{$ref->{'id'}}->{'interval'} = $ref->{'interval'};
 				$values->{$ref->{'id'}}->{'timestamp'} = $ref->{'timestamp'};
 				$values->{$ref->{'id'}}->{'current_timestamp'} = $ref->{'current_timestamp'};
@@ -298,6 +299,7 @@ package mssql;{
 	}
 
 	$query  = "update [$self->{database}->{name}]..$self->{database}->{table} set timestamp = datediff(s, '1970', getdate()) ";
+	$query .= ", status = 0 ";
 	$query .= "where id = $id ";
 
 	eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: ". $DBI::errstr);
@@ -321,8 +323,6 @@ package mssql;{
 	if ($@) { $self->{error} = 1;  $self->{log}->save(2, "mssql execute: ". $DBI::errstr); }
 	$dbh->{AutoCommit} = 1;
 
-my $q = $query;
-
 	$query = "update [$self->{database}->{name}]..$self->{database}->{table} set ";
 	if ($self->{error} == 1){ 
 		$query .= "status = -9999 ";
@@ -330,6 +330,7 @@ my $q = $query;
 	} else {
 		$query .= "status = 1 ";
 	}
+	$query .= ", duration = datediff(s, dateadd(s, [timestamp], '1970'), getdate()) ";
 	$query .= "where id = $id ";
 
 #	$self->{log}->save(4, "$query");
@@ -383,7 +384,7 @@ sub execute {
 	# созданные нити 
 	my @threads;
 
-	my $first_run;
+	my $first_run = 1;
 
 	my $log = LOG->new();
 	$log->save(4, "thread -> $id");
@@ -413,11 +414,12 @@ sub execute {
 #								  $values->{$id}->{'interval'}, $values->{$id}->{'timestamp'},
 #								  $values->{$id}->{'current_timestamp'}, "\n");
 
-			if( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
-				and $values->{$id}->{'enable'} == 1 and defined $first_run ) {
-				$log->save(4, "start scheduler | $id | $values->{$id}->{'current_timestamp'}");
+			if( $values->{$id}->{'enable'} == 1 and $first_run == 1 ) {
+				$log->save(4, "start first scheduler | $id | $values->{$id}->{'current_timestamp'}");
 				push @threads, threads->create(\&child, $id, $values->{$id}->{'execute'});
-			}elsif( $values->{$id}->{'enable'} == 1 and ! defined $first_run ) {
+			}elsif( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
+					and $values->{$id}->{'enable'} == 1  and $values->{$id}->{'status'} == 1 and $first_run == 0 ) {
+				$log->save(4, "start scheduler | $id | $values->{$id}->{'current_timestamp'}");
 				push @threads, threads->create(\&child, $id, $values->{$id}->{'execute'});
 			}
 		}
@@ -436,7 +438,7 @@ sub execute {
 		#@joinable = threads->list(threads::joinable);
 #		print $thread_count, " | count thread join down\n";
 		
-		$first_run = 1;
+		$first_run = 0;
 		sleep(30);
 	}
 }
