@@ -323,10 +323,12 @@ package mssql;{
 	if ($@) { $self->{error} = 1;  $self->{log}->save(2, "mssql execute: ". $DBI::errstr); }
 	$dbh->{AutoCommit} = 1;
 
+	my $query_error = $query;
+
 	$query = "update [$self->{database}->{name}]..$self->{database}->{table} set ";
 	if ($self->{error} == 1){ 
 		$query .= "status = -9999 ";
-		$self->{log}->save(1, "$q");
+		$self->{log}->save(1, "$query_error");
 	} else {
 		$query .= "status = 1 ";
 	}
