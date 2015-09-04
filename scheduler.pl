@@ -420,7 +420,7 @@ sub execute {
 				$log->save(4, "start first scheduler | $id | $values->{$id}->{'current_timestamp'}");
 				push @threads, threads->create(\&child, $id, $values->{$id}->{'execute'});
 			}elsif( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
-					and $values->{$id}->{'enable'} == 1  and $values->{$id}->{'status'} == 1 and $first_run == 0 ) {
+					and $values->{$id}->{'enable'} == 1  and $values->{$id}->{'status'} != 0 and $first_run == 0 ) {
 				$log->save(4, "start scheduler | $id | $values->{$id}->{'current_timestamp'}");
 				push @threads, threads->create(\&child, $id, $values->{$id}->{'execute'});
 			}
