@@ -331,7 +331,7 @@ package mssql;{
 	$query = "update [$self->{database}->{name}]..$self->{database}->{table} set ";
 	if ($self->{error} == 1){ 
 		$query .= "status = -9999 ";
-		$query .= ", error = $DBI::errstr ";
+		$query .= ", error = '$DBI::errstr' ";
 		$self->{log}->save(1, "$query_error");
 	} else {
 		$query .= "status = 1 ";
