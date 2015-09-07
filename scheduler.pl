@@ -56,7 +56,7 @@ Type	Level	Description
   sub save {
     my($self, $type, $log) = @_; # ссылка на объект
 
-	my $level;
+	my ($level, $log_file);
 	
 	if ($type eq 0) {
 		$level = 'ALL';
@@ -83,8 +83,11 @@ Type	Level	Description
 	my $t = time;
 	my $date = strftime "%Y-%m-%d %H:%M:%S", localtime $t;
 	$date .= sprintf ".%03d", ($t-int($t))*1000;
-
-	open(my $fh, '>>', $self->{filename}) or die "Не могу открыть файл '$self->{filename}' $!";
+	
+	my $date_to_file = strftime "%Y%m%d_", localtime $t;
+	$log_file = $date_to_file.$self->{'filename'};
+	
+	open(my $fh, '>>', $log_file) or die "Не могу открыть файл: '$log_file' $!";
 	print $fh "$date $level\t$log\n";
 	close $fh;
   }
@@ -328,9 +331,11 @@ package mssql;{
 	$query = "update [$self->{database}->{name}]..$self->{database}->{table} set ";
 	if ($self->{error} == 1){ 
 		$query .= "status = -9999 ";
+		$query .= ", error = $DBI::errstr ";
 		$self->{log}->save(1, "$query_error");
 	} else {
 		$query .= "status = 1 ";
+		$query .= ", error = '' ";
 	}
 	$query .= ", duration = datediff(s, dateadd(s, [timestamp], '1970'), getdate()) ";
 	$query .= "where id = $id ";
