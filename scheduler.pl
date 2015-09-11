@@ -295,7 +295,7 @@ package mssql;{
 
   sub mssql_send {
 	my($self, $id, $value) = @_;
-	my($sth, $ref, $query);
+	my($sth, $ref, $query, $error_message);
 	  
 	if($self->{error} == 1) {
 		$self->conn();
@@ -323,16 +323,20 @@ package mssql;{
 		}
 		last;
     }
-	if ($@) { $self->{error} = 1;  $self->{log}->save(2, "mssql execute: ". $DBI::errstr); }
+	if ($@) { $self->{error} = 1;
+			  $self->{log}->save(2, "mssql execute: ". $DBI::errstr); 
+			  $error_message = $DBI::errstr;
+	}
 	$dbh->{AutoCommit} = 1;
 
 	my $query_error = $query;
 
 	$query = "update [$self->{database}->{name}]..$self->{database}->{table} set ";
-	if ($self->{error} == 1){ 
-		$query .= "status = -9999 ";
-		$query .= ", error = '$DBI::errstr' ";
+	if ($self->{error} == 1){
 		$self->{log}->save(1, "$query_error");
+		$query .= "status = -9999 ";
+		$error_message =~ s/'/''/g;
+		$query .= ", error = '$error_message' ";
 	} else {
 		$query .= "status = 1 ";
 		$query .= ", error = '' ";
