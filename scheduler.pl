@@ -450,6 +450,10 @@ sub execute {
 #		print $thread_count, " | count thread join down\n";
 		
 		$first_run = 0;
+
+		# clear
+		undef($values);
+
 		sleep(30);
 	}
 }
@@ -468,7 +472,11 @@ sub child {
 
 	$mssql->mssql_send($id, "$execute");
 	
+	# clear
 	undef($mssql);
+	undef($log);
+	undef($mssql);
+
 	threads->exit();
 }
 
