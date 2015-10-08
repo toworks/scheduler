@@ -252,8 +252,8 @@ package mssql;{
 
 	$query = 'SELECT * FROM config_scheduler';
 	
-	eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: " . $DBI::errstr);
-		  $sth->execute() || die $self->{log}->save(2, "mssql execute: " . $DBI::errstr);	};# обработка ошибки
+	eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: " . $DBI::errstr);	};# обработка ошибки
+	eval{ $sth->execute() || die $self->{log}->save(2, "mssql execute: " . $DBI::errstr);	};# обработка ошибки
 
 	unless($@) {
 		while ($ref = $sth->fetchrow_hashref()) {
@@ -276,8 +276,8 @@ package mssql;{
 
 	$query = "SELECT *, datediff(s, '1970', getdate()) as [current_timestamp] FROM [$self->{'database'}->{'name'}]..$self->{'database'}->{'table'}";
 
-	eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: " . $DBI::errstr);
-		  $sth->execute() || die $self->{log}->save(2, "mssql execute: " . $DBI::errstr);	};# обработка ошибки
+	eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: " . $DBI::errstr);	};# обработка ошибки
+	eval{ $sth->execute() || die $self->{log}->save(2, "mssql execute: " . $DBI::errstr);	};# обработка ошибки
 
 	unless($@) {
 		while ($ref = $sth->fetchrow_hashref()) {
@@ -305,16 +305,16 @@ package mssql;{
 	$query .= ", status = 0 ";
 	$query .= "where id = $id ";
 
-	eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: ". $DBI::errstr);
-		  $sth->execute() || die $self->{log}->save(2, "mssql execute: ". $DBI::errstr); };# обработка ошибки
+	eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: ". $DBI::errstr); };# обработка ошибки
+	eval{ $sth->execute() || die $self->{log}->save(2, "mssql execute: ". $DBI::errstr); };# обработка ошибки
 
 	$dbh->{AutoCommit} = 0;
 	$query  = "$value";
 #	$self->{log}->save(4, "$query");
 	
 	DEADLOCK: while (1) {
-        eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: ". $DBI::errstr);
-		$sth->execute() || die $self->{log}->save(2, "mssql execute: ". $DBI::errstr); };# обработка ошибки
+        eval{ $sth = $self->{dbh}->prepare($query) || die $self->{log}->save(2, "mssql prepare: ". $DBI::errstr); };# обработка ошибки
+		eval{ $sth->execute() || die $self->{log}->save(2, "mssql execute: ". $DBI::errstr); };# обработка ошибки
 #		if ($@) { $self->{error} = 1;  $self->{log}->save(2, "mssql execute: ". $DBI::errstr); }
 		
 		if($DBI::errstr =~ /SQL-40001/) { # deadlock
@@ -350,6 +350,8 @@ package mssql;{
 		  $sth->execute() || die $self->{log}->save(2, "mssql execute: ". $DBI::errstr);
 		  $sth->finish() || die $self->{log}->save(2, "mssql finish: ". $DBI::errstr); 
 		  $self->{dbh}->disconnect() || die $self->{log}->save(2, "mssql disconnect: ". $DBI::errstr); };# обработка ошибки
+
+	eval{ $self->{dbh}->disconnect if ($self->{dbh}); };# обработка ошибки
   }
 }
 1;
