@@ -299,15 +299,20 @@ package mssql;{
 
 	$query  = "$value";
 #	$self->{log}->save(4, "$query");
-	
-	DEADLOCK: while (1) {
+	my $count = 0;
+
+	LOOP: while (1) {
         eval{ $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 			  $sth->execute() || die "$DBI::errstr";
 		};# обработка ошибки
-		if ($@) {
+		if ( $@ and $count <= 10 ) {
 			if("$DBI::errstr" =~ /SQL-40001/) { # deadlock
 				$self->{log}->save(1, "last: ". "$DBI::errstr");
-				next DEADLOCK;
+				next LOOP;
+			}
+			if("$DBI::errstr" =~ /ORA-12170/) { # TNS:Connect timeout occurred
+				$self->{log}->save(1, "last: ". "$DBI::errstr");
+				next LOOP;
 			}
 		}
 		last;
