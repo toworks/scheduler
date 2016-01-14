@@ -448,28 +448,28 @@ package main;
 			}
 		}
 #=cut
-		my $thread_count = threads->list();
+		#my $thread_count = threads->list();
 		#my @running = threads->list(threads::running);
 		#my @joinable = threads->list(threads::joinable);
-		print $thread_count, " | count thread join down\n";
+		#print $thread_count, " | count thread join down\n";
 
 		foreach my $kid (@kill_id){
-			print strftime "%Y-%m-%d %H:%M:%S  id | $kid\n", localtime time();
+			#print strftime "%Y-%m-%d %H:%M:%S  id | $kid\n", localtime time();
 			if ( grep { $_ eq $kid } keys %threads ) {
-				$log->save('d', "kill thread id $kid | $threads{$kid}");
-				print strftime "%Y-%m-%d %H:%M:%S  in array $kid | $threads{$kid}\n", localtime time();
+				$log->save('i', "kill thread id $kid");
+				#print strftime "%Y-%m-%d %H:%M:%S  in array $kid | $threads{$kid}\n", localtime time();
 				$threads{$kid}->kill('STOP');
 				if ( ! $threads{$kid}->is_running() ) {
-					print strftime "%Y-%m-%d %H:%M:%S  delete $kid | $threads{$kid}\n", localtime time();
+				#	print strftime "%Y-%m-%d %H:%M:%S  delete $kid | $threads{$kid}\n", localtime time();
 					delete $threads{$kid};
 				}
-				@kill_id = grep { $_ != $kid } @kill_id;
-				for my $key( sort keys %threads) {
-					print "id | $key | $threads{$key}\n";
-				}
+				#@kill_id = grep { $_ != $kid } @kill_id;
+				#for my $key( sort keys %threads) {
+				#	print "id | $key | $threads{$key}\n";
+				#}
 			}
 		}
-		print Dumper \@kill_id;
+		#print Dumper \@kill_id;
 #=cut
 		# clear
 		undef(%values);
@@ -486,7 +486,7 @@ sub child {
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
 
-	$SIG{'STOP'} = sub  { eval{ print strftime "%Y-%m-%d %H:%M:%S  ---> STOP thread num $id\n", localtime time();
+	$SIG{'STOP'} = sub  { eval{ #print strftime "%Y-%m-%d %H:%M:%S  ---> STOP thread num $id\n", localtime time();
 								$log->save('i', "kill child thread id $id");
 								my $mssql = mssql->new($conf, $log);
 								$mssql->up($id);
