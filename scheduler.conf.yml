@@ -2,5 +2,5 @@
 
 mssql:
     host: KRR-TST-PAHWL02\SQLEXPRESS
-    database: KRR-PA-SRV-SERVICE
-    table: report_types
+    database: KRR-PA-GLB-SERVICE
+    table: scheduler
