@@ -200,7 +200,7 @@ package mssql;{
 	eval{ $self->{dbh} = DBI->connect("dbi:ODBC:$self->{dsn}") || die "$DBI::errstr";
 		  $self->{dbh}->{LongReadLen} = 512 * 1024 || die "$DBI::errstr"; # We are interested in the first 512 KB of data
 		  $self->{dbh}->{LongTruncOk} = 1 || die "$DBI::errstr"; # We're happy to truncate any excess
-		  $self->{dbh}->{RaiseError} = 1 || die "$DBI::errstr";
+          #$self->{dbh}->{RaiseError} = 1 || die "$DBI::errstr"; # при 1 eval игнорируется, для диагностики полезно
 	};# обработка ошибки
 	if($@) { $self->{log}->save('e', "$@"); $self->{error} = 1; } else { $self->{log}->save('i', "connected mssql"); $self->{error} = 0; }
   }
