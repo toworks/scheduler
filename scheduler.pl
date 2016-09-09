@@ -251,7 +251,7 @@ package mssql;{
 
 	$self->conn() if ( $self->{error} == 1 );
 
-	$query = "SELECT *, datediff(s, '1970', getdate()) as [current_timestamp] FROM [$self->{sql}->{database}]..$self->{sql}->{table}";
+	$query = "SELECT *, datediff(s, '1970', getdate()) as [current_timestamp] FROM [$self->{sql}->{database}]..$self->{sql}->{table} with(nolock)";
 
 	eval{ $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 		  $sth->execute() || die "$DBI::errstr";
