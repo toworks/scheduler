@@ -192,7 +192,7 @@ package mssql;{
  
   sub set_con {
     my($self) = @_; # ссылка на объект
-	$self->{dsn} = "Driver={SQL Server};Server=$self->{sql}->{host};Database=$self->{sql}->{database};Trusted_Connection=yes";
+	$self->{dsn} = "Driver={SQL Server Native Client 11.0};Server=$self->{sql}->{host};Database=$self->{sql}->{database};Trusted_Connection=yes";
   }
 
   sub conn {
@@ -200,9 +200,9 @@ package mssql;{
 	eval{ $self->{dbh} = DBI->connect("dbi:ODBC:$self->{dsn}") || die "$DBI::errstr";
 		  $self->{dbh}->{LongReadLen} = 512 * 1024 || die "$DBI::errstr"; # We are interested in the first 512 KB of data
 		  $self->{dbh}->{LongTruncOk} = 1 || die "$DBI::errstr"; # We're happy to truncate any excess
-          #$self->{dbh}->{RaiseError} = 1 || die "$DBI::errstr"; # при 1 eval игнорируется, для диагностики полезно
+#          $self->{dbh}->{RaiseError} = 0 || die "$DBI::errstr"; # при 1 eval игнорируется, для диагностики полезно
 	};# обработка ошибки
-	if($@) { $self->{log}->save('e', "$@"); $self->{error} = 1; } else { $self->{log}->save('i', "connected mssql"); $self->{error} = 0; }
+	if($@) { $self->{log}->save('e', "$@"); $self->{error} = 1; } else { $self->{error} = 0; }
   }
 
   sub set_table {
@@ -249,11 +249,12 @@ package mssql;{
 	my($self) = @_;
 	my($sth, $ref, $query, %values);
 
-	$self->conn() if ( $self->{error} == 1 );
+	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
 	$query = "SELECT *, datediff(s, '1970', getdate()) as [current_timestamp] FROM [$self->{sql}->{database}]..$self->{sql}->{table} with(nolock)";
 
-	eval{ $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
+	eval{ $self->{dbh}->{RaiseError} = 1;
+		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 		  $sth->execute() || die "$DBI::errstr";
 	};# обработка ошибки
 	if ($@) {   $self->{error} = 1;
@@ -261,14 +262,16 @@ package mssql;{
 	};
 
 	unless($@) {
-		while ($ref = $sth->fetchrow_hashref()) {
-				$values{$ref->{'id'}}{'name'} = $ref->{'name'};
-				$values{$ref->{'id'}}{'execute'} = $ref->{'execute'};
-				$values{$ref->{'id'}}{'enable'} = $ref->{'enable'};
-				$values{$ref->{'id'}}{'status'} = $ref->{'status'};
-				$values{$ref->{'id'}}{'interval'} = $ref->{'interval'};
-				$values{$ref->{'id'}}{'timestamp'} = $ref->{'timestamp'};
-				$values{$ref->{'id'}}{'current_timestamp'} = $ref->{'current_timestamp'};
+	    eval{
+				while ($ref = $sth->fetchrow_hashref()) {
+						$values{$ref->{'id'}}{'name'} = $ref->{'name'};
+						$values{$ref->{'id'}}{'execute'} = $ref->{'execute'};
+						$values{$ref->{'id'}}{'enable'} = $ref->{'enable'};
+						$values{$ref->{'id'}}{'status'} = $ref->{'status'};
+						$values{$ref->{'id'}}{'interval'} = $ref->{'interval'};
+						$values{$ref->{'id'}}{'timestamp'} = $ref->{'timestamp'};
+						$values{$ref->{'id'}}{'current_timestamp'} = $ref->{'current_timestamp'};
+				}
 		}
 	}
 	eval{ $sth->finish() || die "$DBI::errstr";	};# обработка ошибки
@@ -282,13 +285,14 @@ package mssql;{
 	my($self, $id, $value) = @_;
 	my($sth, $ref, $query, $error_message);
 
-	$self->conn() if ( $self->{error} == 1 );
+	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
 	$query  = "update [$self->{sql}->{database}]..$self->{sql}->{table} set timestamp = datediff(s, '1970', getdate()) ";
 	$query .= ", status = 0 ";
 	$query .= "where id = $id ";
 
-	eval{ $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
+	eval{ $self->{dbh}->{RaiseError} = 1;
+		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 		  $sth->execute() || die "$DBI::errstr";
 	};# обработка ошибки
 	if ($@) { $self->{error} = 1;
@@ -302,7 +306,8 @@ package mssql;{
 	my $count = 0;
 
 	LOOP: while (1) {
-        eval{ $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
+        eval{ $self->{dbh}->{RaiseError} = 1;
+			  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 			  $sth->execute() || die "$DBI::errstr";
 		};# обработка ошибки
 		if ( $@ and $count <= 10 ) {
@@ -351,7 +356,8 @@ package mssql;{
 
 #	$self->{log}->save(4, "$query");
 
-	eval{ $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
+	eval{ $self->{dbh}->{RaiseError} = 1;
+		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 		  $sth->execute() || die "$DBI::errstr";
 		  $sth->finish() || die "$DBI::errstr";
 	};# обработка ошибки
@@ -365,21 +371,50 @@ package mssql;{
 
     my($sth, $ref, $query);
 
-    $self->conn() if ( $self->{error} eq 1 );
+    $self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
     $query = "UPDATE [$self->{sql}->{database}]..$self->{sql}->{table} SET status = 1 , error = N'force kill thread' where id = ?";
 
-    $self->{dbh}->{AutoCommit} = 0;
-    eval{ $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
+    eval{ $self->{dbh}->{RaiseError} = 1;
+	      $self->{dbh}->{AutoCommit} = 0;
+		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 #          $sth->execute( @$_ ) || die "$DBI::errstr" for @array;
           $sth->execute( $id ) || die "$DBI::errstr";
           $sth->finish || die "$DBI::errstr";
+		  $self->{dbh}->{AutoCommit} = 1;
     };# обработка ошибки
     if ( $@ ) {
         $self->{log}->save('e', "$DBI::errstr");
         $self->{error} = 1;
     }
-    $self->{dbh}->{AutoCommit} = 1;
+  }
+
+
+  sub status_up {
+    my($self, $id, $status) = @_; # ссылка на объект
+
+    my($sth, $ref, $query);
+
+    $self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
+
+    $query = "UPDATE [$self->{sql}->{database}]..$self->{sql}->{table} SET status = ? ";
+	$query .= "where id = ? " if defined($id);
+	
+    eval{ $self->{dbh}->{RaiseError} = 1;
+#	      $self->{dbh}->{AutoCommit} = 0;
+		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
+		  if ( defined($id) ) {
+			$sth->execute( $status, $id ) || die "$DBI::errstr";
+		  } else {
+			$sth->execute( $status ) || die "$DBI::errstr";
+		  }
+          $sth->finish || die "$DBI::errstr";
+#		  $self->{dbh}->{AutoCommit} = 1;
+    };
+    if ( $@ ) {
+        $self->{log}->save('e', "$DBI::errstr");
+        $self->{error} = 1;
+    }
   }
 }
 1;
@@ -404,39 +439,44 @@ package main;
   my $log = LOG->new();
 
   my $conf = CONF->new($log);
- 
-  { # --| main loop
-	my $first_run = 1;
 
+  #close(STDERR); #close error to console
+
+  { # --| main loop
 	my (%threads, $id, @kill_id);
 	
 	$log->save(4, "thread main");
 
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
-#	my $mssql_ = mssql->new($conf, $log);
+	$mssql->status_up(undef, 1); #first run up to 1
+
 	while(1) {
 		my %values = $mssql->get_scheduler;
-		#print  Dumper($values);
+		#print  Dumper(sort {$a <=> $b} keys %values);
 
-		for my $level1 ( keys %values ) {
-			my $id = $level1;
-
+		for my $id ( sort {$a <=> $b} keys %values ) {
+=comment
 			if( $values{$id}{'enable'} == 1 and $first_run == 1 ) {
 				$log->save('i', "start first scheduler | $id | $values{$id}{'current_timestamp'}");
 				$threads{$id} = threads->create(\&child, $id, $values{$id}{'execute'}, $conf, $log);
 #				$threads{$id} = async{ $mssql_->save($id, $values{$id}{'execute'}) };
+#$mssql->status_up($id, 9);
 			}elsif( $values{$id}{'current_timestamp'} > $values{$id}{'timestamp'}+$values{$id}{'interval'}
 					and $values{$id}{'enable'} == 1  and $values{$id}{'status'} != 0 and $first_run == 0 ) {
 				$log->save('i', "start scheduler | $id | $values{$id}{'current_timestamp'}");
 				$threads{$id} = threads->create(\&child, $id, $values{$id}{'execute'}, $conf, $log);
 #				$threads{$id} = async{ $mssql_->save($id, $values{$id}{'execute'}) };
 			}
+=cut
+			if( $values{$id}{'current_timestamp'} > $values{$id}{'timestamp'}+$values{$id}{'interval'}
+					and $values{$id}{'enable'} == 1 and $values{$id}{'status'} != 0 ) {
+				$log->save('i', "start scheduler | $id | $values{$id}{'current_timestamp'}");
+				$threads{$id} = threads->create(\&child, $id, $values{$id}{'execute'}, $conf, $log);
+			}
 
 			if ( $values{$id}{'enable'} == 0 and $values{$id}{'status'} == 0 ) { push @kill_id, $id; };
 		}
-		
-		$first_run = 0;
 
 #=comm
 		foreach (threads->list()) {
@@ -474,7 +514,7 @@ package main;
 		# clear
 		undef(%values);
 		splice(@kill_id);
-		sleep(3);
+		select undef, undef, undef, 1;
 	}
   } # --| main loop
 
