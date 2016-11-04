@@ -284,32 +284,22 @@ package mssql;{
   sub save {
 	my($self, $id, $value) = @_;
 	my($sth, $ref, $query, $error_message);
-
+	
+	$self->status_up($id, 0);
+	
 	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
-	$query  = "update [$self->{sql}->{database}]..$self->{sql}->{table} set timestamp = datediff(s, '1970', getdate()) ";
-	$query .= ", status = 0 ";
-	$query .= "where id = $id ";
-
-	eval{ $self->{dbh}->{RaiseError} = 1;
-		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
-		  $sth->execute() || die "$DBI::errstr";
-	};# обработка ошибки
-	if ($@) { $self->{error} = 1;
-			  $self->{log}->save('e', "$DBI::errstr");
-	}
-
-#	$self->{dbh}->{AutoCommit} = 0;
-
 	$query  = "$value";
-#	$self->{log}->save(4, "$query");
+#	$self->{log}->save('d', "$query");
 	my $count = 0;
 
 	LOOP: while (1) {
         eval{ $self->{dbh}->{RaiseError} = 1;
+#			  $self->{dbh}->{AutoCommit} = 0;
 			  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 			  $sth->execute() || die "$DBI::errstr";
-		};# обработка ошибки
+#			  $self->{dbh}->{AutoCommit} = 1;
+		};
 		if ( $@ and $count <= 10 ) {
 			if("$DBI::errstr" =~ /SQL-40001/) { # deadlock
 				$self->{log}->save(1, "last: ". "$DBI::errstr");
@@ -336,9 +326,6 @@ package mssql;{
         } while($sth->{syb_more_results});
 =cut
 
-
-#	$self->{dbh}->{AutoCommit} = 1;
-
 	my $query_error = $query;
 
 	$query = "update [$self->{sql}->{database}]..$self->{sql}->{table} set ";
@@ -354,17 +341,20 @@ package mssql;{
 	$query .= ", duration = datediff(s, dateadd(s, [timestamp], '1970'), getdate()) ";
 	$query .= "where id = $id ";
 
-#	$self->{log}->save(4, "$query");
+#	$self->{log}->save('d', "$query");
 
 	eval{ $self->{dbh}->{RaiseError} = 1;
+#		  $self->{dbh}->{AutoCommit} = 0;
 		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 		  $sth->execute() || die "$DBI::errstr";
+#		  $self->{dbh}->{AutoCommit} = 1;
 		  $sth->finish() || die "$DBI::errstr";
-	};# обработка ошибки
+	};
 	if ($@) { $self->{error} = 1;
 			  $self->{log}->save('e', "$DBI::errstr");
 	}
   }
+
 
   sub up {
     my($self, $id) = @_; # ссылка на объект
@@ -376,13 +366,13 @@ package mssql;{
     $query = "UPDATE [$self->{sql}->{database}]..$self->{sql}->{table} SET status = 1 , error = N'force kill thread' where id = ?";
 
     eval{ $self->{dbh}->{RaiseError} = 1;
-	      $self->{dbh}->{AutoCommit} = 0;
+#	      $self->{dbh}->{AutoCommit} = 0;
 		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 #          $sth->execute( @$_ ) || die "$DBI::errstr" for @array;
           $sth->execute( $id ) || die "$DBI::errstr";
+#		  $self->{dbh}->{AutoCommit} = 1;
           $sth->finish || die "$DBI::errstr";
-		  $self->{dbh}->{AutoCommit} = 1;
-    };# обработка ошибки
+    };
     if ( $@ ) {
         $self->{log}->save('e', "$DBI::errstr");
         $self->{error} = 1;
@@ -397,7 +387,8 @@ package mssql;{
 
     $self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
-    $query = "UPDATE [$self->{sql}->{database}]..$self->{sql}->{table} SET status = ? ";
+    $query  = "UPDATE [$self->{sql}->{database}]..$self->{sql}->{table} SET status = ? ";
+	$query .= ", timestamp = datediff(s, '1970', getdate()) " if defined($id);
 	$query .= "where id = ? " if defined($id);
 	
     eval{ $self->{dbh}->{RaiseError} = 1;
@@ -408,8 +399,8 @@ package mssql;{
 		  } else {
 			$sth->execute( $status ) || die "$DBI::errstr";
 		  }
-          $sth->finish || die "$DBI::errstr";
 #		  $self->{dbh}->{AutoCommit} = 1;
+          $sth->finish || die "$DBI::errstr";
     };
     if ( $@ ) {
         $self->{log}->save('e', "$DBI::errstr");
@@ -514,7 +505,7 @@ package main;
 		# clear
 		undef(%values);
 		splice(@kill_id);
-		select undef, undef, undef, 1;
+		select undef, undef, undef, 2;
 	}
   } # --| main loop
 
