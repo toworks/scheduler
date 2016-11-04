@@ -511,7 +511,7 @@ package main;
 		# clear
 		undef(%values);
 		splice(@kill_id);
-		select undef, undef, undef, 1;
+		sleep(3);
 	}
   } # --| main loop
 
