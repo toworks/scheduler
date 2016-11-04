@@ -202,7 +202,13 @@ package mssql;{
 		  $self->{dbh}->{LongTruncOk} = 1 || die "$DBI::errstr"; # We're happy to truncate any excess
 #          $self->{dbh}->{RaiseError} = 0 || die "$DBI::errstr"; # при 1 eval игнорируется, для диагностики полезно
 	};# обработка ошибки
-	if($@) { $self->{log}->save('e', "$@"); $self->{error} = 1; } else { $self->{error} = 0; }
+	if($@) {
+		$self->{log}->save('e', "$@"); $self->{error} = 1;
+	} else {
+		$self->{error} = 0;
+		#if error connect update all status in 1
+		$self->status_up(undef, 1);
+	}
   }
 
   sub set_table {
@@ -440,7 +446,7 @@ package main;
 
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
-	$mssql->status_up(undef, 1); #first run up to 1
+#	$mssql->status_up(undef, 1); #first run up to 1
 
 	while(1) {
 		my %values = $mssql->get_scheduler;
