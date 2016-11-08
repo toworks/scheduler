@@ -527,6 +527,8 @@ sub child {
 
 	$log->save('i', "thread -> ". $id);
 
+	threads->yield();
+
 	$mssql->save($id, "$execute");
 
 	threads->exit();
