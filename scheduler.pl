@@ -284,12 +284,20 @@ package mssql;{
   sub save {
 	my($self, $id, $value) = @_;
 	my($sth, $ref, $query, $error_message);
+
+	local $SIG{'STOP'} = sub { 
+#								$self->{log}->save('d', "start | $id");
+								$self->up($id);
+								#$sth->cancel;
+#								$self->{log}->save('d', "stop | $id");
+								threads->exit();
+	};
 	
 	$self->status_up($id, 0);
 	
 	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
-	$query  = "$value";
+	$query = "$value";
 #	$self->{log}->save('d', "$query");
 	my $count = 0;
 
@@ -433,10 +441,12 @@ package main;
 
   #close(STDERR); #close error to console
 
+  local $SIG{'INT'} = $SIG{'TERM'} = $SIG{'KILL'} = sub { $log->save('i', $log->get_name ." exit"); exit; };
+
   { # --| main loop
 	my (%threads, $id, @kill_id);
 	
-	$log->save(4, "thread main");
+	$log->save('i', "thread main");
 
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
@@ -516,14 +526,6 @@ sub child {
 
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
-
-	$SIG{'STOP'} = sub  { eval{ #print strftime "%Y-%m-%d %H:%M:%S  ---> STOP thread num $id\n", localtime time();
-								$log->save('i', "kill child thread id $id");
-								my $mssql = mssql->new($conf, $log);
-								$mssql->up($id);
-								threads->exit();
-						  };# обработка ошибки
-				   };
 
 	$log->save('i', "thread -> ". $id);
 
