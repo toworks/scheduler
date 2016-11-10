@@ -441,12 +441,12 @@ package main;
 
   #close(STDERR); #close error to console
 
-  local $SIG{'INT'} = $SIG{'TERM'} = $SIG{'KILL'} = sub { $log->save('i', $log->get_name ." exit"); exit; };
+  local $SIG{'INT'} = $SIG{'TERM'} = $SIG{'KILL'} = sub { $log->save('i', $log->get_name ." stop"); exit; };
 
   { # --| main loop
 	my (%threads, $id, @kill_id);
 	
-	$log->save('i', "thread main");
+	$log->save('i', $log->get_name ." start");
 
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
@@ -472,7 +472,7 @@ package main;
 =cut
 			if( $values{$id}{'current_timestamp'} > $values{$id}{'timestamp'}+$values{$id}{'interval'}
 					and $values{$id}{'enable'} == 1 and $values{$id}{'status'} != 0 ) {
-				$log->save('i', "start scheduler | $id | $values{$id}{'current_timestamp'}");
+#				$log->save('i', "start scheduler | $id | $values{$id}{'current_timestamp'}");
 				$threads{$id} = threads->create(\&child, $id, $values{$id}{'execute'}, $conf, $log);
 			}
 
@@ -527,7 +527,7 @@ sub child {
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
 
-	$log->save('i', "thread -> ". $id);
+#	$log->save('i', "thread id ". $id);
 
 	threads->yield();
 
