@@ -310,11 +310,13 @@ package mssql;{
 		};
 		if ( $@ and $count <= 10 ) {
 			if("$DBI::errstr" =~ /SQL-40001/) { # deadlock
-				$self->{log}->save(1, "last: ". "$DBI::errstr");
+				$self->{log}->save('e', "last: ". "$DBI::errstr");
+				$self->{log}->save('d', "$query");
 				next LOOP;
 			}
 			if("$DBI::errstr" =~ /ORA-12170/) { # TNS:Connect timeout occurred
-				$self->{log}->save(1, "last: ". "$DBI::errstr");
+				$self->{log}->save('e', "last: ". "$DBI::errstr");
+				$self->{log}->save('d', "$query");
 				next LOOP;
 			}
 		}
@@ -329,7 +331,7 @@ package mssql;{
                 while(my $d = $sth->fetch)
                 {
                         print "out  @$d\n";
-						$self->{log}->save(1, "out: @$d");
+						$self->{log}->save('e', "out: @$d");
                 }
         } while($sth->{syb_more_results});
 =cut
