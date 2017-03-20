@@ -452,7 +452,11 @@ package main;
 
 	# mssql create object
 	my $mssql = mssql->new($conf, $log);
-	$mssql->status_up(undef, 1); #first run up to 1
+	
+	while( $mssql->get_error() > 0 ) {
+		$mssql->status_up(undef, 1); #first run up to 1
+		$log->save('d', "first run up status, mssql error: ".$mssql->get_error());
+	}
 
 	while(1) {
 		my %values = $mssql->get_scheduler;
