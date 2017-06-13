@@ -538,6 +538,8 @@ sub child {
 	threads->yield();
 
 	$mssql->save($id, "$execute");
-
+	
+	$mssql = undef;
+	
 	threads->exit();
 }
