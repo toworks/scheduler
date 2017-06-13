@@ -192,7 +192,7 @@ package mssql;{
  
   sub set_con {
     my($self) = @_; # ссылка на объект
-	$self->{dsn} = "Driver={SQL Server Native Client 11.0};Server=$self->{sql}->{host};Database=$self->{sql}->{database};Trusted_Connection=yes";
+	$self->{dsn} = "Driver={ODBC Driver 13 for SQL Server};Server=$self->{sql}->{host};Database=$self->{sql}->{database};Trusted_Connection=yes";
   }
 
   sub conn {
