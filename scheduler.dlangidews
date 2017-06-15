@@ -1,0 +1,9 @@
+{
+    "name": "scheduler",
+    "description": null,
+    "projects": {
+        "scheduler": "scheduler/dub.json"
+    },
+    "includePath": {
+    }
+}
