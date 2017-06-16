@@ -1,82 +1,4 @@
-/*import std.stdio;
-
-void main()
-{
-	writeln("Edit source/app.d to start your project.");
-}
-*/
 /*
-//module std.database.sqlite.test;
-module dstddb;
-import std.database.sqlite;
-import std.database.util;
-import std.stdio;
-
-
-void main()
-{
-	auto db = createDatabase("path:///testdb.sdb");
-    //auto rows = db.connection().statement("select name,score from score").query.rows;
-    auto rows = db.connection().query("select name,score from score").rows;
-    foreach (r; rows) {
-        writeln(r[0].as!string,",",r[1].as!int);
-        //writeln(r[0],", ",r[1]);
-    }
-
-    writefln("Enter something: ");
-    char entered;
-    do{ 
-        readf(" %c\n", &entered);
-        writefln("Entered: %s", entered);
-    }while(entered != 'y');
-
-}
-*/
-
-/*
-//module dstddb;
-import std.database.freetds;
-import std.datetime;
-import std.stdio;
-
-
-void main() {
-	auto db = createDatabase("freetds");
-	auto con = db.connection();
-//    auto db = createDatabase("freetds://krr-tst-pahwl02:1433/test?username=sa&password=admin");
-//--    auto db = createDatabase("freetds://krr-tst-pahwl02:1433/terra_skladskaya");
-//--    auto con = db.connection();
-    //con.query("drop table d1");
-    //con.query("create table d1(a date)");
-    //con.query("insert into d1 values ('2016-01-15')");
-    //auto rows = con.query("select * from d1").rows;
-//--	auto rows = con.query("select @@VERSION as ver").rows;
-//--	rows.writeRows;
-}
-*/
-
-/*
-//module dstddb;
-import std.database.testsuite;
-import std.database.testsuite;
-import std.database.odbc;
-import std.database.util;
-import std.stdio;
-
-void main() {
-    alias DB = Database!DefaultPolicy;
-    //testAll!DB("odbc");
-    auto dr = Driver.showDrivers();
-	//auto db = createDatabase("Driver={SQL Server Native Client 11.0};Server=KRR-TST-PAHWL02\\SQLEXPRESS;Database=terra_skladskaya;Trusted_Connection=Yes");
-    //auto con = db.connection();
-	//db.showDrivers();
-	writeln("< 999 >");
-}
-*/
-
-//module arsd;
-//module mssql;
-
 import arsd.mssql;
 import std.stdio;
 
@@ -92,7 +14,7 @@ void main() {
 	}
 */	
     // loop
-    for ( ; ; ) {  
+/*    for ( ; ; ) {  
     	//foreach (line; db.query("select 11, @@VERSION as name") ) {
     	//	writeln(line[0], line["name"]);
         foreach (line; db.query("select * from [KRR-PA-DEV-Development]..[stage]") ) {
@@ -100,6 +22,55 @@ void main() {
     	}
     }
 }
+*/
+
+import configuration;
+import logging;
+import arsd.mssql;
+import std.stdio;
+import core.thread;
+import std.format;
 
 
+void main(string[] args)
+{
+    auto log_ = new logging();
+//    log_.save('f', "ttyutyuty");
+	auto db = new MsSql("Driver={SQL Server Native Client 11.0};Server=KRR-TST-PAHWL02;Database=KRR-PA-GLB-SERVICE;Trusted_Connection=Yes");
 
+    while (true) {
+        log_.save('i', "ttyutyuty");
+        log_.save('w', "-+");
+        auto log = new logging();
+        log.save('e', "---->");
+        destroy(log);
+//    }
+	
+//		auto db = new MsSql("Driver={SQL Server Native Client 11.0};Server=KRR-TST-PAHWL02;Database=KRR-PA-GLB-SERVICE;Trusted_Connection=Yes");
+	
+		for (int i = 0; i < 10; i++) {
+			//writeln(i);
+			//log_.save('w', format("%s", i));
+			try {
+				//foreach (line; db.query("select id, execute] from [KRR-PA-GLB-SERVICE]..[scheduler] --where enable = 1 and status = 1") ) {
+				foreach (line; db.query("select id name from [KRR-PA-GLB-SERVICE]..scheduler") ) {
+					//writeln("id: ",line[0], " | ", line["id"], " name: ", line["name"]);
+					//writeln("id: ",line[0]);
+					log_.save('i', "id: " ~ line[0]);
+					//log_.save('i', "id: " ~ line[0] ~ " exec: " ~ line[1]);
+				}
+			} catch (Exception e) {
+				log_.save('e', e.msg);
+			}
+		}
+//		destroy(db);
+		//destroy(log);
+		 Thread.sleep(1.seconds);
+	}
+/*    auto arr = split(dirName(thisExePath()), "/");
+    string name = arr[arr.length-1];
+    writeln(arr.length, " | ", name);*/
+
+//    auto conf = new configuration("7-7-");
+//    writeln(conf.filename);
+}

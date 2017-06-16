@@ -1,6 +1,8 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"dstddb": "0.0.10"
+		"dstddb": "0.0.10",
+		"dyaml": "0.6.2",
+		"tinyendian": "0.1.2"
 	}
 }
