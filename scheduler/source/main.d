@@ -36,7 +36,7 @@ void main(string[] args)
 {
     auto log_ = new logging();
 //    log_.save('f', "ttyutyuty");
-	auto db = new MsSql("Driver={SQL Server Native Client 11.0};Server=KRR-TST-PAHWL02;Database=KRR-PA-GLB-SERVICE;Trusted_Connection=Yes");
+	//auto db = new MsSql("Driver={SQL Server Native Client 11.0};Server=KRR-TST-PAHWL02;Database=KRR-PA-GLB-SERVICE;Trusted_Connection=Yes;Regional=No;");
 
     while (true) {
         log_.save('i', "ttyutyuty");
@@ -46,27 +46,33 @@ void main(string[] args)
         destroy(log);
 //    }
 	
-//		auto db = new MsSql("Driver={SQL Server Native Client 11.0};Server=KRR-TST-PAHWL02;Database=KRR-PA-GLB-SERVICE;Trusted_Connection=Yes");
+		auto db = new MsSql("Driver={SQL Server Native Client 11.0};Server=KRR-TST-PAHWL02;Database=KRR-PA-GLB-SERVICE;Trusted_Connection=Yes");
 	
 		for (int i = 0; i < 10; i++) {
 			//writeln(i);
 			//log_.save('w', format("%s", i));
 			try {
-				//foreach (line; db.query("select id, execute] from [KRR-PA-GLB-SERVICE]..[scheduler] --where enable = 1 and status = 1") ) {
-				foreach (line; db.query("select id name from [KRR-PA-GLB-SERVICE]..scheduler") ) {
+                log_.save('i', "start exec");
+                db.query("declare @q nvarchar(max); select @q=[execute] from [KRR-PA-GLB-SERVICE]..[scheduler] where id = 46; exec(@q);select 0 as id, N'ola-la-la' as name;");
+				//foreach (line; db.query("select id, [execute] from [KRR-PA-GLB-SERVICE]..[scheduler] where id = 46") ) {
+				//foreach (line; db.query("select id, name from [KRR-PA-GLB-SERVICE]..scheduler") ) {
+				//foreach (line; db.query("exec [KRR-PA-ANL-Analytics]..ARMP_TRENDS") ) {
 					//writeln("id: ",line[0], " | ", line["id"], " name: ", line["name"]);
 					//writeln("id: ",line[0]);
-					log_.save('i', "id: " ~ line[0]);
+					//log_.save('i', "id: " ~ line[0] ~ " name: " ~ line[1]);
+					//log_.save('i', "EXEC");
 					//log_.save('i', "id: " ~ line[0] ~ " exec: " ~ line[1]);
-				}
+                    log_.save('i', "end exec");
+				//}
 			} catch (Exception e) {
 				log_.save('e', e.msg);
 			}
 		}
-//		destroy(db);
+		destroy(db);
 		//destroy(log);
-		 Thread.sleep(1.seconds);
-	}
+		 //Thread.sleep(1.seconds);
+         Thread.sleep(5.msecs);
+         }
 /*    auto arr = split(dirName(thisExePath()), "/");
     string name = arr[arr.length-1];
     writeln(arr.length, " | ", name);*/
