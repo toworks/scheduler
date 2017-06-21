@@ -105,61 +105,31 @@ package CONF;{
   use Data::Dumper;
 
   sub new {
-    # получаем имя класса
     my($class, $log) = @_;
-    # создаем хэш, содержащий свойства объекта
-    my $self = {
-		'log' => $log,
-	};
+    my $self = bless {
+						'log' => $log,
+	}, $class;
 
-    # хэш превращается, превращается хэш...
-    bless $self, $class;
-    # ... в элегантный объект!
-
-    # эта строчка - просто для ясности кода
-    # bless и так возвращает свой первый аргумент
-	
 	$self->set_conf;
 
     return $self;
   }
 
   sub set_conf {
-    my($self) = @_; # ссылка на объект
-	my($config);
-
-	eval{ $config = LoadFile($self->{log}->get_name().'.conf.yml') || die $!; };# обработка ошибки
-	if($@) { $self->{log}->save('e', $!); exit 1; }
-
-	for (keys %{$config}) {
-		if ($_ =~ /mssql/){
-			$self->{$_} = $config->{$_};
-			#$self->{$_}->{host} = $config->{$_}->{host};
-			#$self->{$_}->{database} = $config->{$_}->{database};
-			#$self->{$name}->{username} = $config->{$name}->{username};
-			#$self->{$name}->{password} = $config->{$name}->{password};
-		}
-	}
+    my($self) = @_;
+	eval{ $self->{'config'} = LoadFile($self->{log}->get_name().'.conf.yml') || die $!; };# обработка ошибки
+	if($@) { $self->{log}->save('e', "$@"); exit 1; }
   }
-  
+
   sub get_conf {
     my($self, $name) = @_; # ссылка на объект
-	my ($mssql);
-
-	if ($name =~ /mssql/){
-		#$mssql->{host} = $self->{$name}->{host};
-		#$mssql->{database} = $self->{$name}->{database};
-		#$mssql->{username} = $self->{$name}->{username};
-		#$mssql->{password} = $self->{$name}->{password};
-		#return $mssql;
-		return $self->{$name};
-	}
+	return $self->{'config'}->{$name} || undef;
   } 
 }
 1;
 
 
-package mssql;{
+package sql;{
   use strict;
   use warnings;
   use utf8;
@@ -170,34 +140,26 @@ package mssql;{
   use Data::Dumper;
 
   sub new {
-    # получаем имя класса
     my($class, $conf, $log) = @_;
-    # создаем хэш, содержащий свойства объекта
-    my $self = {
-		'error' => 1,
-		'log' => $log,
-        'sql' => $conf->get_conf('mssql'),
-	};
-
-    # хэш превращается, превращается хэш...
-    bless $self, $class;
-    # ... в элегантный объект!
+    my $self = bless {	'error' => 1,
+						'log' => $log,
+						'sql' => $conf->get_conf('sql'),
+						'DEBUG' => undef,
+	}, $class;
 
     $self->set_con();
 
-    # эта строчка - просто для ясности кода
-    # bless и так возвращает свой первый аргумент
     return $self;
   }
  
   sub set_con {
     my($self) = @_; # ссылка на объект
-	$self->{dsn} = "Driver={ODBC Driver 13 for SQL Server};Server=$self->{sql}->{host};Database=$self->{sql}->{database};Trusted_Connection=yes";
+	$self->{dsn} = "Driver={ODBC Driver 13 for SQL Server};Server=$self->{sql}->{host};Database=$self->{sql}->{database};Trusted_Connection=yes" if $self->{sql}->{type} eq "mssql";
   }
 
   sub conn {
 	my($self) = @_; # ссылка на объект
-	eval{ $self->{dbh} = DBI->connect("dbi:ODBC:$self->{dsn}") || die "$DBI::errstr";
+	eval{ $self->{dbh} = DBI->connect("dbi:ODBC:$self->{dsn}") || die "$DBI::errstr" if $self->{sql}->{type} eq "mssql";
 		  $self->{dbh}->{LongReadLen} = 512 * 1024 || die "$DBI::errstr"; # We are interested in the first 512 KB of data
 		  $self->{dbh}->{LongTruncOk} = 1 || die "$DBI::errstr"; # We're happy to truncate any excess
 #          $self->{dbh}->{RaiseError} = 0 || die "$DBI::errstr"; # при 1 eval игнорируется, для диагностики полезно
@@ -205,44 +167,26 @@ package mssql;{
 	if ($@) { $self->{log}->save('e', "$@"); $self->{error} = 1; } else { $self->{error} = 0; }
   }
 
-  sub set_table {
-    my($self, $table) = @_; # ссылка на объект
-	$self->{table} = $table;
+  sub get {
+    my($self, $name) = @_;
+    return $self->{sql}->{$name};
   }
 
-  sub get_host {
-    my($self) = @_; # ссылка на объект
-	return $self->{host};
+  sub set {
+    my($self, %set) = @_;
+	foreach my $key ( keys %set ) {
+        $self->{sql}->{$key} = $set{$key};
+    }
   }
 
-  sub get_database {
-    my($self) = @_; # ссылка на объект
-	return $self->{database};
-  }
-
-  sub get_username {
-    my($self) = @_; # ссылка на объект
-	return $self->{username};
-  }
-
-  sub get_password {
-    my($self) = @_; # ссылка на объект
-	return $self->{password};
-  }
-
-  sub get_dsn {
-    my($self) = @_; # ссылка на объект
-	return $self->{dsn};
+  sub debug {
+    my($self, $debug) = @_;
+    $self->{'DEBUG'} = $debug;
   }
 
   sub get_error {
 	my($self) = @_; # ссылка на объект
 	return $self->{error};
-  }
-
-  sub get_table {
-    my($self) = @_; # ссылка на объект
-	return $self->{table};
   }
 
   sub get_scheduler {
@@ -251,7 +195,7 @@ package mssql;{
 
 	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
-	$query = "SELECT *, datediff(s, '1970', getdate()) as [current_timestamp] FROM [$self->{sql}->{database}]..$self->{sql}->{table} with(nolock)";
+	$query = "SELECT *, datediff(s, '1970', getdate()) as [current_timestamp] FROM [$self->{sql}->{database}]..$self->{sql}->{table} with(nolock) ";
 
 	eval{ $self->{dbh}->{RaiseError} = 1;
 		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
@@ -264,8 +208,6 @@ package mssql;{
 	unless($@) {
 	    eval{
 				while ($ref = $sth->fetchrow_hashref()) {
-						$values{$ref->{'id'}}{'name'} = $ref->{'name'};
-						$values{$ref->{'id'}}{'execute'} = $ref->{'execute'};
 						$values{$ref->{'id'}}{'enable'} = $ref->{'enable'};
 						$values{$ref->{'id'}}{'status'} = $ref->{'status'};
 						$values{$ref->{'id'}}{'interval'} = $ref->{'interval'};
@@ -278,11 +220,14 @@ package mssql;{
 	if ($@) {   $self->{error} = 1;
 				$self->{log}->save('e', "$DBI::errstr");
 	};
-	return(%values);
+
+	$self->{log}->save('d', "\n".Dumper(\%values)."\n") if $self->{'DEBUG'};
+	
+	return(\%values);
   }
 
   sub save {
-	my($self, $id, $value) = @_;
+	my($self, $id) = @_;
 	my($sth, $ref, $query, $error_message);
 
 	local $SIG{'STOP'} = sub { 
@@ -297,8 +242,13 @@ package mssql;{
 	
 	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
-	$query = "$value";
-#	$self->{log}->save('d', "$query");
+	$query = "declare \@query nvarchar(max) ";
+	$query .= "select \@query=[execute] from [$self->{sql}->{database}]..$self->{sql}->{table} with(nolock) ";
+	$query .= "where id = $id ";
+	$query .= 'exec(@query) ';
+
+
+	$self->{log}->save('d', "sql save query: $query") if $self->{'DEBUG'};
 	my $count = 0;
 
 	LOOP: while (1) {
@@ -323,8 +273,10 @@ package mssql;{
 		last;
 	}
 	if ($@) { $self->{error} = 1;
-			  $self->{log}->save('e', "$DBI::errstr");
+			  #$self->{log}->save('e', "$DBI::errstr");
 			  $error_message = "$DBI::errstr";
+			  $self->{log}->save('e', "the task execution id: $id");
+			  $self->{log}->save('e', "$error_message");
 	}
 =comm
 		do {
@@ -336,11 +288,8 @@ package mssql;{
         } while($sth->{syb_more_results});
 =cut
 
-	my $query_error = $query;
-
 	$query = "update [$self->{sql}->{database}]..$self->{sql}->{table} set ";
 	if ($self->{error} == 1){
-		$self->{log}->save('d', "$query_error");
 		$query .= "status = -9999 ";
 		$error_message =~ s/'/''/g;
 		$query .= ", error = '$error_message' ";
@@ -351,7 +300,7 @@ package mssql;{
 	$query .= ", duration = datediff(s, dateadd(s, [timestamp], '1970'), getdate()) ";
 	$query .= "where id = $id ";
 
-#	$self->{log}->save('d', "$query");
+	$self->{log}->save('d', "sql save update $query: $query") if $self->{'DEBUG'};
 
 	eval{ $self->{dbh}->{RaiseError} = 1;
 #		  $self->{dbh}->{AutoCommit} = 0;
@@ -441,6 +390,8 @@ package main;
 
   my $conf = CONF->new($log);
 
+  my $DEBUG = $conf->get_conf('app')->{'debug'};
+
   #close(STDERR); #close error to console
 
   local $SIG{'INT'} = $SIG{'TERM'} = $SIG{'KILL'} = sub { $log->save('i', $log->get_name ." stop"); exit; };
@@ -451,18 +402,19 @@ package main;
 	$log->save('i', $log->get_name ." start");
 
 	# mssql create object
-	my $mssql = mssql->new($conf, $log);
-	
+	my $mssql = sql->new($conf, $log);
+	$mssql->debug($DEBUG);
+
 	while( $mssql->get_error() > 0 ) {
 		$mssql->status_up(undef, 1); #first run up to 1
 		$log->save('d', "first run up status, mssql error: ".$mssql->get_error());
 	}
 
 	while(1) {
-		my %values = $mssql->get_scheduler;
+		my $values = $mssql->get_scheduler;
 		#print  Dumper(sort {$a <=> $b} keys %values);
 
-		for my $id ( sort {$a <=> $b} keys %values ) {
+		for my $id ( sort {$a <=> $b} keys %{$values} ) {
 =comment
 			if( $values{$id}{'enable'} == 1 and $first_run == 1 ) {
 				$log->save('i', "start first scheduler | $id | $values{$id}{'current_timestamp'}");
@@ -476,13 +428,14 @@ package main;
 #				$threads{$id} = async{ $mssql_->save($id, $values{$id}{'execute'}) };
 			}
 =cut
-			if( $values{$id}{'current_timestamp'} > $values{$id}{'timestamp'}+$values{$id}{'interval'}
-					and $values{$id}{'enable'} == 1 and $values{$id}{'status'} != 0 ) {
-#				$log->save('i', "start scheduler | $id | $values{$id}{'current_timestamp'}");
-				$threads{$id} = threads->create(\&child, $id, $values{$id}{'execute'}, $conf, $log);
+			if( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
+					and $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} != 0 ) {
+				$log->save('d', "start scheduler | $values->{$id}->{'current_timestamp'} | $id") if $DEBUG;
+				threads->yield();
+				$threads{$id} = threads->create(\&child, $id, $conf, $log);
 			}
 
-			if ( $values{$id}{'enable'} == 0 and $values{$id}{'status'} == 0 ) { push @kill_id, $id; };
+			if ( $values->{$id}->{'enable'} == 0 and $values->{$id}->{'status'} == 0 ) { push @kill_id, $id; };
 		}
 
 #=comm
@@ -519,25 +472,26 @@ package main;
 		#print Dumper \@kill_id;
 #=cut
 		# clear
-		undef(%values);
+		undef($values);
 		splice(@kill_id);
-		sleep(3);
+		select undef, undef, undef, $conf->get_conf('app')->{'cycle'} || 1;
 	}
   } # --| main loop
 
 
 sub child {
 	$0 =~ m/.*[\/\\]/g;
-	my ($id, $execute, $conf, $log) = @_;
+	my ($id, $conf, $log) = @_;
 
 	# mssql create object
-	my $mssql = mssql->new($conf, $log);
+	my $mssql = sql->new($conf, $log);
+	$mssql->debug($DEBUG);
 
-#	$log->save('i', "thread id ". $id);
+	$log->save('d', "child thread id: ". $id) if $DEBUG;
 
 	threads->yield();
 
-	$mssql->save($id, "$execute");
+	$mssql->save($id);
 	
 	$mssql = undef;
 	

@@ -1,6 +1,11 @@
 
 
-mssql:
+sql:
+    type: mssql
     host: KRR-TST-PAHWL02\SQLEXPRESS
     database: KRR-PA-GLB-SERVICE
     table: scheduler
+
+app:
+    cycle: 1
+    debug: false
