@@ -2,7 +2,7 @@
 
 sql:
     type: mssql
-    host: KRR-TST-PAHWL02\SQLEXPRESS
+    host: KRR-TST-PAHWL02
     database: KRR-PA-GLB-SERVICE
     table: scheduler
 
