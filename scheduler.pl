@@ -436,6 +436,13 @@ package main;
 			}
 
 			if ( $values->{$id}->{'enable'} == 0 and $values->{$id}->{'status'} == 0 ) { push @kill_id, $id; };
+			
+			# update if it hovers status 600 = 10 min
+			if ( $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} == 0
+				 and $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}+600 < $values->{$id}->{'current_timestamp'}) {
+				$mssql->status_up($id, 1);
+				$log->save('w', "the task $id hovered");
+			};
 		}
 
 #=comm
