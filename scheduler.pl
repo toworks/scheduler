@@ -238,7 +238,7 @@ package sql;{
 								threads->exit();
 	};
 	
-	$self->status_up($id, 0);
+	$self->status_up(1, $id, 0);
 	
 	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
@@ -340,20 +340,22 @@ package sql;{
 
 
   sub status_up {
-    my($self, $id, $status) = @_; # ссылка на объект
+    my($self, $timestamp_up, $id, $status) = @_; # ссылка на объект
 
     my($sth, $ref, $query);
 
     $self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
     $query  = "UPDATE [$self->{sql}->{database}]..$self->{sql}->{table} SET status = ? ";
-	$query .= ", timestamp = datediff(s, '1970', getdate()) " if defined($id);
-	$query .= "where id = ? " if defined($id);
+	if ( $timestamp_up eq 1 ) {
+		$query .= ", timestamp = datediff(s, '1970', getdate()) ";
+		$query .= "where id = ? ";
+	}
 	
     eval{ $self->{dbh}->{RaiseError} = 1;
 #	      $self->{dbh}->{AutoCommit} = 0;
 		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
-		  if ( defined($id) ) {
+		  if ( $timestamp_up eq 1 ) {
 			$sth->execute( $status, $id ) || die "$DBI::errstr";
 		  } else {
 			$sth->execute( $status ) || die "$DBI::errstr";
@@ -405,11 +407,6 @@ package main;
 	my $mssql = sql->new($conf, $log);
 	$mssql->debug($DEBUG);
 
-	while( $mssql->get_error() > 0 ) {
-		$mssql->status_up(undef, 1); #first run up to 1
-		$log->save('d', "first run up status, mssql error: ".$mssql->get_error());
-	}
-
 	while(1) {
 		my $values = $mssql->get_scheduler;
 		#print  Dumper(sort {$a <=> $b} keys %values);
@@ -437,10 +434,12 @@ package main;
 
 			if ( $values->{$id}->{'enable'} == 0 and $values->{$id}->{'status'} == 0 ) { push @kill_id, $id; };
 			
+			#$log->save('w', "id: $id  $threads{$id}") if ( ! grep { $_ eq $id } keys %threads );
+			
 			# update if it hovers status 600 = 10 min
 			if ( $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} == 0
-				 and $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}+600 < $values->{$id}->{'current_timestamp'}) {
-				$mssql->status_up($id, 1);
+				 and ( ! grep { $_ eq $id } keys %threads ) ) {
+				$mssql->status_up(0, $id, 1);
 				$log->save('w', "the task $id hovered");
 			};
 		}
