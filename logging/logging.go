@@ -7,6 +7,7 @@ package main
     "log"
     "path/filepath"
     "strings"
+    "time"
  )
 
  type Message struct {
@@ -19,6 +20,7 @@ package main
  }
 
  const log_suffix string = ".log"
+ const space string = "    "
 // var t = File{}
 // var f *File = &t
  var f *File = &File{}
@@ -59,14 +61,19 @@ package main
     return "Grrr"
  }
 
- func Save (_type, _mmessage string) {
+ func Save (_type, _message string) {
 //    var f string = *File
+//    fmt.Println(time.Now().Format("2006-01-02 15:04:05.000"))
+    var msg string
+    msg = fmt.Sprintf("%s%s%s%s%s\n", time.Now().Format("2006-01-02 15:04:05.000"),
+                                      space, _type, space, _message)
     // If the file doesn't exist, create it, or append to the file
     f, err := os.OpenFile(f.name+log_suffix, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
     if err != nil {
         log.Fatal(err)
     }
-    if _, err := f.Write([]byte("appended some data\n")); err != nil {
+//    if _, err := f.Write([]byte("appended some data\n")); err != nil {
+    if _, err := f.Write([]byte(msg)); err != nil {
         log.Fatal(err)
     }
     if err := f.Close(); err != nil {
