@@ -1,0 +1,23 @@
+package logging
+
+ import (
+    "fmt"
+    "os"
+    "path/filepath"
+ )
+
+ func lmain() {
+
+    filename := os.Args[1] // get command line first parameter
+
+    filedirectory := filepath.Dir(filename)
+
+    thepath, err := filepath.Abs(filedirectory)
+
+    if err != nil {
+//       log.Fatal(err)
+       fmt.Println("err: ", err)
+    }
+
+    fmt.Println("path: fname: ", thepath, os.Args[0])
+ }
