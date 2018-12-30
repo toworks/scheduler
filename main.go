@@ -1,7 +1,7 @@
 package main
 
  import (
-    "fmt"
+//    "fmt"
 //    "os"
 //    "path/filepath"
     l "./logging"
@@ -9,8 +9,10 @@ package main
 
  func main () {
 //    d := logging.Lmain(false)
-    d := l.Lmain(false)
+//    d := l.Save("t", "test")
+    l.Save("t", "test")
+    l.Save("i", "test")
 //    logging.Lmain()
 //    log.lmain()
-    fmt.Println("ret: ", d)
+//    fmt.Println("ret: ", d)
  }
