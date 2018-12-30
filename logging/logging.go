@@ -1,5 +1,5 @@
-//package logging
-package main
+package logging
+//package main
 
  import (
     "fmt"
@@ -22,8 +22,11 @@ package main
  const log_suffix string = ".log"
  var f *File = &File{}
 
-// func init() {
- func main() {
+ func init() {
+    f.set_file()
+ }
+
+/* func main() {
     f.set_file()
     fmt.Printf("f.name: %s f._path: %s\n", f.name, f._path)
     Save("i", f.name +" | "+ f._path)
@@ -35,7 +38,7 @@ package main
     Save("i", "iii")
     Save("d", "ddd")
     Save("t", "tt")
- }
+ }*/
 
  func (f *File) set_file() {
     f.name = os.Args[0] // get command line first parameter
