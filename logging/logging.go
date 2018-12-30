@@ -20,24 +20,14 @@ package main
  }
 
  const log_suffix string = ".log"
-// var t = File{}
-// var f *File = &t
  var f *File = &File{}
 
 // func init() {
  func main() {
-//    f := File{"ffff", "eeE"}
     f.set_file()
-//    var f File
-/*    f.name = os.Args[0] // get command line first parameter
-    f._path = filepath.Dir(f.name)
-    f._path, _ = filepath.Abs(f._path)
-    f.name = filepath.Base(f.name)
-    var ext string = filepath.Ext(f.name)
-    f.name = strings.TrimSuffix(f.name, ext)*/
-//    fmt.Printf("f.name: %s f._path: %s\n", f.name, f._path)
     fmt.Printf("f.name: %s f._path: %s\n", f.name, f._path)
-    get_type("2 i")
+    Save("i", f.name +" | "+ f._path)
+
     Save("33", "rrr")
     Save("f", "fff")
     Save("e", "err")
@@ -48,7 +38,6 @@ package main
  }
 
  func (f *File) set_file() {
-//    var f File
     f.name = os.Args[0] // get command line first parameter
     f._path = filepath.Dir(f.name)
     f._path, _ = filepath.Abs(f._path)
@@ -56,17 +45,9 @@ package main
     var ext string = filepath.Ext(f.name)
     f.name = strings.TrimSuffix(f.name, ext)
 //    fmt.Printf("f.name: %s f._path: %s\n", f.name, f._path)
-    get_type("i")
-    get_type("d")
-
  }
 
  func get_type(t string) string {
-//    fmt.Printf("t: %s f._path: %s\n", t, t)
-//    fmt.Printf("2 f.name: %s 2 f._path: %s\n", f.name, f._path)
-
-    fmt.Printf("|%-5s|\n", "F")
-
     var _type string
     switch {
         case t == "f" :
@@ -84,12 +65,10 @@ package main
         default :
             _type = "INFO"
     }
-    return fmt.Sprintf("|%-5s|", _type)
+    return fmt.Sprintf("%-5s", _type)
  }
 
  func Save (_type, _message string) {
-//    var f string = *File
-//    fmt.Println(time.Now().Format("2006-01-02 15:04:05.000"))
     var msg string
     msg = fmt.Sprintf("%s%s%s%s%s\n", time.Now().Format("2006-01-02 15:04:05.000"),
                                       "  ", get_type(_type), "  ", _message)
@@ -98,7 +77,7 @@ package main
     if err != nil {
         log.Fatal(err)
     }
-//    if _, err := f.Write([]byte("appended some data\n")); err != nil {
+
     if _, err := f.Write([]byte(msg)); err != nil {
         log.Fatal(err)
     }
@@ -106,25 +85,3 @@ package main
         log.Fatal(err)
     }
  }
-
-
-
-/*
- func Lmain(n bool) bool {
-// func lmain() {
-
-    filename := os.Args[0] // get command line first parameter
-
-    filedirectory := filepath.Dir(filename)
-
-    thepath, err := filepath.Abs(filedirectory)
-
-    if err != nil {
-//       log.Fatal(err)
-       fmt.Println("err: ", err)
-    }
-
-    fmt.Println("path: fname: ", thepath, os.Args[0])
-    return n
- }
-*/
