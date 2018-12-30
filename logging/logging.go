@@ -20,7 +20,6 @@ package main
  }
 
  const log_suffix string = ".log"
- const space string = "    "
 // var t = File{}
 // var f *File = &t
  var f *File = &File{}
@@ -40,6 +39,12 @@ package main
     fmt.Printf("f.name: %s f._path: %s\n", f.name, f._path)
     get_type("2 i")
     Save("33", "rrr")
+    Save("f", "fff")
+    Save("e", "err")
+    Save("w", "www")
+    Save("i", "iii")
+    Save("d", "ddd")
+    Save("t", "tt")
  }
 
  func (f *File) set_file() {
@@ -52,13 +57,34 @@ package main
     f.name = strings.TrimSuffix(f.name, ext)
 //    fmt.Printf("f.name: %s f._path: %s\n", f.name, f._path)
     get_type("i")
+    get_type("d")
 
  }
 
  func get_type(t string) string {
-    fmt.Printf("t: %s f._path: %s\n", t, t)
-    fmt.Printf("2 f.name: %s 2 f._path: %s\n", f.name, f._path)
-    return "Grrr"
+//    fmt.Printf("t: %s f._path: %s\n", t, t)
+//    fmt.Printf("2 f.name: %s 2 f._path: %s\n", f.name, f._path)
+
+    fmt.Printf("|%-5s|\n", "F")
+
+    var _type string
+    switch {
+        case t == "f" :
+            _type = "FATAL"
+        case t == "e" :
+            _type = "ERROR"
+        case t == "w" :
+            _type = "WARN"
+        case t == "i" :
+            _type = "INFO"
+        case t == "d" :
+            _type = "DEBUG"
+        case t == "t" :
+            _type = "TRACE"
+        default :
+            _type = "INFO"
+    }
+    return fmt.Sprintf("|%-5s|", _type)
  }
 
  func Save (_type, _message string) {
@@ -66,7 +92,7 @@ package main
 //    fmt.Println(time.Now().Format("2006-01-02 15:04:05.000"))
     var msg string
     msg = fmt.Sprintf("%s%s%s%s%s\n", time.Now().Format("2006-01-02 15:04:05.000"),
-                                      space, _type, space, _message)
+                                      "  ", get_type(_type), "  ", _message)
     // If the file doesn't exist, create it, or append to the file
     f, err := os.OpenFile(f.name+log_suffix, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
     if err != nil {
