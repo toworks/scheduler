@@ -111,7 +111,7 @@ class MsSqlResult : ResultSet {
 			fetchNext;
 	}
 
-	int length()
+	override size_t length()
 	{
 		return 1; //FIX ME
 	}
@@ -135,6 +135,7 @@ class MsSqlResult : ResultSet {
 		int[string] mapping;
 		string[] columnNames;
 		int numFields;
+		enum SQLCHAR_BUF = 3; //65535; //add 
 
 		bool isEmpty;
 
@@ -153,18 +154,24 @@ class MsSqlResult : ResultSet {
 
 				for(int i = 0; i < numFields; i++) {
 					string a;
-
+			
 					more:
-				        SQLCHAR[255] buf;
-					if(SQLGetData(statement, cast(ushort)(i+1), SQL_CHAR, buf.ptr, 255, &ptr) != SQL_SUCCESS)
+				        //SQLCHAR[SQLCHAR_BUF] buf;
+						SQLCHAR[SQLCHAR_BUF] buf;
+					if(SQLGetData(statement, cast(ushort)(i+1), SQL_CHAR, buf.ptr, SQLCHAR_BUF, &ptr) != SQL_SUCCESS)
 						throw new DatabaseException("get data: " ~ getSQLError(SQL_HANDLE_STMT, statement));
+
+import std.stdio;
+import std.conv;
+writeln("start " ~  to!string(SQL_CHAR));
 
 					assert(ptr != SQL_NO_TOTAL);
 					if(ptr == SQL_NULL_DATA)
 						a = null;
 					else {
-						a ~= cast(string) buf[0 .. ptr > 255 ? 255 : ptr].idup;
-						ptr -= ptr > 255 ? 255 : ptr;
+						a ~= cast(string) buf[0 .. ptr > SQLCHAR_BUF ? SQLCHAR_BUF : ptr].idup;
+						ptr -= ptr > SQLCHAR_BUF ? SQLCHAR_BUF : ptr;
+writeln("inside " ~  to!string(buf.length));
 						if(ptr)
 							goto more;
 					}
@@ -229,3 +236,4 @@ void main() {
 	}
 }
 */
+

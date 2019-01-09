@@ -6,6 +6,7 @@
     "platforms": ["windows"],
     "dependencies": {
 		"dyaml": { "version" : "~>0.6.2"},
+		"dstddb": "~>0.0.10",
     },
 	"buildTypes": {
         "debug": {

@@ -1,4 +1,3 @@
-
 module logging;
 
 import std.stdio;
