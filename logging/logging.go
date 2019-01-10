@@ -25,7 +25,7 @@ const log_suffix string = ".log"
 //var f *File = &File{}
 
 
- func (f *File) init() {
+func (f *File) init() {
     f.set_file()
  }
 
