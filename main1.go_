@@ -4,12 +4,14 @@ package main
 import (
     "fmt"
     "time"
+    l "./logging"
 )
 
 func pinger(c chan string) {
     for i := 0; ; i++ {
         var s = "ping"
                 fmt.Println("1: ", s, time.Now())
+                l.Save("i", "1: "+s)
         c <- s
     }
 }
@@ -17,6 +19,7 @@ func printer(c chan string) {
     for {
         msg := <- c
         fmt.Println("2: ", msg)
+        l.Save("i", "2: "+msg)
 //        time.Sleep(time.Second * 1)
         time.Sleep(time.Millisecond * 100)
     }
