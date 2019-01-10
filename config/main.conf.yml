@@ -1,0 +1,23 @@
+foo: 1
+bar:
+  - one
+  - two
+
+description: fruits are delicious
+fruits:
+  apple:
+    - red
+    - sweet
+  lemon:
+    - yellow
+    - sour
+
+sql:
+    type: mssql
+    host: KRR-TST-PAHWL02
+    database: KRR-PA-GLB-SERVICE
+    table: scheduler
+
+app:
+    cycle: 1
+    debug: false
