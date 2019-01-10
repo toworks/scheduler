@@ -29,20 +29,6 @@ const log_suffix string = ".log"
     f.set_file()
  }
 
-/* func main() {
-   f.set_file()
-   fmt.Printf("f.name: %s f._path: %s\n", f.name, f._path)
-   Save("i", f.name +" | "+ f._path)
-
-   Save("33", "rrr")
-   Save("f", "fff")
-   Save("e", "err")
-   Save("w", "www")
-   Save("i", "iii")
-   Save("d", "ddd")
-   Save("t", "tt")
-}*/
-
 func New() *File {
 	var f *File = &File{}
 	f.set_file()
@@ -98,6 +84,10 @@ func (f *File) Save(_type, _message string) {
 	}
 }
 
-func (f *File) Get_path() string {
+func (f *File) Name() string {
+	return f.name
+}
+
+func (f *File) Path() string {
 	return f._path
 }
