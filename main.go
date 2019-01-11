@@ -8,9 +8,10 @@ import (
 	l "./logging"
 )
 
+var log = l.New()
+
 func main() {
-	log := l.New()
-	//log.New{"r44"}
+	Tew()
 	//    d := logging.Lmain(false)
 	//    d := l.Save("t", "test")
 	//	conf := new(l)

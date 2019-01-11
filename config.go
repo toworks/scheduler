@@ -1,13 +1,11 @@
-package config
-
-//package main
+package main
 
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
-
+//	"os"
 	"gopkg.in/yaml.v2"
+//	l "./logging"
 )
 
 type Config struct {
@@ -20,9 +18,11 @@ type Config struct {
 var conf Config
 
 //func main() {
-func new(l logging) {
-	filename := os.Args[1]
-	source, err := ioutil.ReadFile(filename)
+//func Tew(f *log) {
+func Tew() {
+//	log := l.New()
+//	filename := os.Args[1]
+	source, err := ioutil.ReadFile(log.Path()+"/"+log.Name()+".conf.yml")
 	if err != nil {
 		panic(err)
 	}
@@ -37,4 +37,5 @@ func new(l logging) {
 	fmt.Printf("Fruits-apple: %#+v\n", conf.Fruits["apple"])
 	fmt.Printf("Fruits-0000: %#+v\n", conf.Fruits["apple"])
 	fmt.Printf("Fruits-last: %#+v\n", conf.Fruits["apple"][0])
+	log.Save("w", "21231232 | "+log.Path())
 }
