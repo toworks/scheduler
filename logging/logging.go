@@ -68,10 +68,11 @@ func get_type(t string) string {
 
 func (f *File) Save(_type, _message string) {
 	var msg string
+	var timestamp string = time.Now().Format("20060102")
 	msg = fmt.Sprintf("%s%s%s%s%s\r\n", time.Now().Format("2006-01-02 15:04:05.000"),
 		"  ", get_type(_type), "  ", _message)
 	// If the file doesn't exist, create it, or append to the file
-	file, err := os.OpenFile(f.name+log_suffix, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(timestamp+"_"+f.name+log_suffix, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
