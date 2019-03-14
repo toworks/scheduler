@@ -208,6 +208,7 @@ package sql;{
 	unless($@) {
 	    eval{
 				while ($ref = $sth->fetchrow_hashref()) {
+						$values{$ref->{'id'}}{'execute'} = $ref->{'execute'};
 						$values{$ref->{'id'}}{'enable'} = $ref->{'enable'};
 						$values{$ref->{'id'}}{'status'} = $ref->{'status'};
 						$values{$ref->{'id'}}{'interval'} = $ref->{'interval'};
@@ -227,8 +228,8 @@ package sql;{
   }
 
   sub save {
-	my($self, $id) = @_;
-	my($sth, $ref, $query, $error_message);
+	my($self, $id, $query) = @_;
+	my($sth, $ref, $error_message);
 
 	local $SIG{'STOP'} = sub { 
 #								$self->{log}->save('d', "start | $id");
@@ -242,17 +243,12 @@ package sql;{
 	
 	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
-	$query = "declare \@query nvarchar(max) ";
-	$query .= "select \@query=[execute] from [$self->{sql}->{database}]..$self->{sql}->{table} with(nolock) ";
-	$query .= "where id = $id ";
-	$query .= 'exec(@query) ';
-
-
 	$self->{log}->save('d', "sql save query: $query") if $self->{'DEBUG'};
 	my $count = 0;
 
 	LOOP: while (1) {
         eval{ $self->{dbh}->{RaiseError} = 1;
+			  # if not autocommit error if execute to linked server oracle
 #			  $self->{dbh}->{AutoCommit} = 0;
 			  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
 			  $sth->execute() || die "$DBI::errstr";
@@ -425,11 +421,14 @@ package main;
 #				$threads{$id} = async{ $mssql_->save($id, $values{$id}{'execute'}) };
 			}
 =cut
+
+			$log->save('d', "execute: ".$values->{$id}->{'execute'}) if $DEBUG;
+
 			if( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
 					and $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} != 0 ) {
 				$log->save('d', "start scheduler | $values->{$id}->{'current_timestamp'} | $id") if $DEBUG;
 				threads->yield();
-				$threads{$id} = threads->create(\&child, $id, $conf, $log);
+				$threads{$id} = threads->create(\&child, $id, $values->{$id}->{'execute'}, $conf, $log);
 			}
 
 			if ( $values->{$id}->{'enable'} == 0 and $values->{$id}->{'status'} == 0 ) { push @kill_id, $id; };
@@ -487,7 +486,7 @@ package main;
 
 sub child {
 	$0 =~ m/.*[\/\\]/g;
-	my ($id, $conf, $log) = @_;
+	my ($id, $execute, $conf, $log) = @_;
 
 	# mssql create object
 	my $mssql = sql->new($conf, $log);
@@ -497,7 +496,7 @@ sub child {
 
 	threads->yield();
 
-	$mssql->save($id);
+	$mssql->save($id, $execute);
 	
 	$mssql = undef;
 	
