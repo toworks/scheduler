@@ -239,74 +239,62 @@ package sql;{
 								threads->exit();
 	};
 	
-	$self->status_up(1, $id, 0);
+#	$self->status_up(1, $id, 0);
+	my $return_query = $query;
+	my $_query = $return_query;
+	
+	$_query =~ s/'/''/g; 
+	
+	$query  = "BEGIN TRY ";
+	$query .= "		/*BEGIN TRANSACTION*/ ";
+	$query .= "			update [$self->{sql}->{database}]..$self->{sql}->{table} ";
+	$query .= "			set status = 0, ";
+	$query .= "				timestamp = datediff(s, '1970', getdate()) ";
+	$query .= "				where id = ". $id ." ";
+	$query .= "			exec('". $_query ."') ";
+	$query .= "			update [$self->{sql}->{database}]..$self->{sql}->{table} ";
+	$query .= "			set status = 1, ";
+	$query .= "				error = '', ";
+	$query .= "				duration = datediff(s, dateadd(s, [timestamp], '1970'), getdate()) ";
+	$query .= "				where id = ". $id ." ";
+	$query .= "		/*COMMIT*/ ";
+	$query .= "END TRY ";
+	$query .= "BEGIN CATCH ";
+	$query .= "		/*ROLLBACK*/ ";
+	$query .= "		DECLARE \@ErrorMessage NVARCHAR(4000) ";
+    $query .= "		DECLARE \@ErrorSeverity INT ";
+    $query .= "		DECLARE \@ErrorState INT ";
+    $query .= "		SELECT ";
+    $query .= "				\@ErrorMessage = ERROR_MESSAGE(), ";
+    $query .= "				\@ErrorSeverity = ERROR_SEVERITY(), ";
+    $query .= "				\@ErrorState = ERROR_STATE() ";
+	$query .= "     update [$self->{sql}->{database}]..$self->{sql}->{table} ";
+	$query .= "		set status = 1, ";
+	$query .= "		error = N'ERROR_NUMBER: ' + CAST(ERROR_NUMBER() AS NVARCHAR) + ";
+	$query .= "				N', ERROR_SEVERITY: '+ IsNull(CAST(ERROR_SEVERITY() AS NVARCHAR),N'') + ";
+	$query .= "				N', ERROR_STATE: '+ IsNull(CAST(ERROR_STATE() AS NVARCHAR),N'') + ";
+	$query .= "				N', ERROR_PROCEDURE: '+ IsNull(ERROR_PROCEDURE(),N'') +	";
+	$query .= "				N', ERROR_LINE '+ CAST(ERROR_LINE() AS NVARCHAR) + ";
+	$query .= "				N', ERROR_MESSAGE: '+ ERROR_MESSAGE() ";
+	$query .= "		where id = ". $id ." ";
+	$query .= "		RAISERROR (\@ErrorMessage, \@ErrorSeverity, \@ErrorState) ";
+	$query .= "END CATCH ";
 	
 	$self->conn() if ( $self->{error} == 1 or ! $self->{dbh}->ping );
 
 	$self->{log}->save('d', "sql save query: $query") if $self->{'DEBUG'};
-	my $count = 0;
 
-	LOOP: while (1) {
-        eval{ $self->{dbh}->{RaiseError} = 1;
-			  # if not autocommit error if execute to linked server oracle
-#			  $self->{dbh}->{AutoCommit} = 0;
-			  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
-			  $sth->execute() || die "$DBI::errstr";
-#			  $self->{dbh}->{AutoCommit} = 1;
-		};
-		if ( $@ and $count <= 10 ) {
-			if("$DBI::errstr" =~ /SQL-40001/) { # deadlock
-				$self->{log}->save('e', "last: ". "$DBI::errstr");
-				$self->{log}->save('d', "$query");
-				next LOOP;
-			}
-			if("$DBI::errstr" =~ /ORA-12170/) { # TNS:Connect timeout occurred
-				$self->{log}->save('e', "last: ". "$DBI::errstr");
-				$self->{log}->save('d', "$query");
-				next LOOP;
-			}
-		}
-		last;
-	}
-	if ($@) { $self->{error} = 1;
-			  #$self->{log}->save('e', "$DBI::errstr");
-			  $error_message = "$DBI::errstr";
-			  $self->{log}->save('e', "the task execution id: $id");
-			  $self->{log}->save('e', "$error_message");
-	}
-=comm
-		do {
-                while(my $d = $sth->fetch)
-                {
-                        print "out  @$d\n";
-						$self->{log}->save('e', "out: @$d");
-                }
-        } while($sth->{syb_more_results});
-=cut
-
-	$query = "update [$self->{sql}->{database}]..$self->{sql}->{table} set ";
-	if ($self->{error} == 1){
-		$query .= "status = -9999 ";
-		$error_message =~ s/'/''/g;
-		$query .= ", error = '$error_message' ";
-	} else {
-		$query .= "status = 1 ";
-		$query .= ", error = '' ";
-	}
-	$query .= ", duration = datediff(s, dateadd(s, [timestamp], '1970'), getdate()) ";
-	$query .= "where id = $id ";
-
-	$self->{log}->save('d', "sql save update $query: $query") if $self->{'DEBUG'};
-
-	eval{ $self->{dbh}->{RaiseError} = 1;
-#		  $self->{dbh}->{AutoCommit} = 0;
-		  $sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
-		  $sth->execute() || die "$DBI::errstr";
-#		  $self->{dbh}->{AutoCommit} = 1;
-		  $sth->finish() || die "$DBI::errstr";
+    eval{ $self->{dbh}->{RaiseError} = 1;
+			# if not autocommit error if execute to linked server oracle
+#			$self->{dbh}->{AutoCommit} = 0;
+			$sth = $self->{dbh}->prepare($query) || die "$DBI::errstr";
+			$sth->execute() || die "$DBI::errstr";
+#			$self->{dbh}->{AutoCommit} = 1;
 	};
 	if ($@) { $self->{error} = 1;
+			  $self->{log}->save('e', "the task execution id: $id");
 			  $self->{log}->save('e', "$DBI::errstr");
+			  $self->{log}->save('d', "$return_query");
 	}
   }
 
@@ -383,7 +371,7 @@ package main;
   #$ENV{'PATH'} = "$ENV{'PATH'};C:\\bin\\perl\\perl\\site\\bin\\;C:\\bin\\perl\\perl\\bin\\;C:\\bin\\perl\\c\\bin\\";
 
   $| = 1; #flushing output
-
+  
   my $log = LOG->new();
 
   my $conf = CONF->new($log);
@@ -425,7 +413,9 @@ package main;
 			$log->save('d', "execute: ".$values->{$id}->{'execute'}) if $DEBUG;
 
 			if( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
-					and $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} != 0 ) {
+				and $values->{$id}->{'enable'} == 1 #and ( $values->{$id}->{'status'} != 0 or ! defined($threads{$id}) )
+				and ( ! defined($threads{$id}) or ( defined($threads{$id}) and ! $threads{$id}->is_running() ) )
+			) {
 				$log->save('d', "start scheduler | $values->{$id}->{'current_timestamp'} | $id") if $DEBUG;
 				threads->yield();
 				$threads{$id} = threads->create(\&child, $id, $values->{$id}->{'execute'}, $conf, $log);
@@ -434,16 +424,17 @@ package main;
 			if ( $values->{$id}->{'enable'} == 0 and $values->{$id}->{'status'} == 0 ) { push @kill_id, $id; };
 			
 			#$log->save('w', "id: $id  $threads{$id}") if ( ! grep { $_ eq $id } keys %threads );
-			
-			# update if it hovers status 600 = 10 min
-			if ( $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} == 0
-				 and ( ! grep { $_ eq $id } keys %threads ) ) {
+
+			if ( $values->{$id}->{'enable'} == 1 and
+				 $values->{$id}->{'status'} == 0 and
+				 defined($threads{$id}) and
+				 ! $threads{$id}->is_running() )
+			{
 				$mssql->status_up(0, $id, 1);
-				$log->save('w', "the task $id hovered");
+				#$log->save('w', "the task $id hovered") if $DEBUG;
 			};
 		}
 
-#=comm
 		foreach (threads->list()) {
 			# Обратите внимание, что $thread является не объектом, а ссылкой,
 			# поэтому управление ему передано не будет.
@@ -452,12 +443,7 @@ package main;
 				$_->join();
 			}
 		}
-#=cut
-		#my $thread_count = threads->list();
-		#my @running = threads->list(threads::running);
-		#my @joinable = threads->list(threads::joinable);
-		#print $thread_count, " | count thread join down\n";
-
+		
 		foreach my $kid (@kill_id){
 			#print strftime "%Y-%m-%d %H:%M:%S  id | $kid\n", localtime time();
 			if ( grep { $_ eq $kid } keys %threads ) {
@@ -475,7 +461,7 @@ package main;
 			}
 		}
 		#print Dumper \@kill_id;
-#=cut
+
 		# clear
 		undef($values);
 		splice(@kill_id);
@@ -499,6 +485,6 @@ sub child {
 	$mssql->save($id, $execute);
 	
 	$mssql = undef;
-	
+
 	threads->exit();
 }
