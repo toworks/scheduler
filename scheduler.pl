@@ -413,13 +413,33 @@ package main;
 			$log->save('d', "execute: ".$values->{$id}->{'execute'}) if $DEBUG;
 
 			if( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
-				and $values->{$id}->{'enable'} == 1 #and ( $values->{$id}->{'status'} != 0 or ! defined($threads{$id}) )
+				and $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} != 0
+#				or ! defined($threads{$id}) )
 				and ( ! defined($threads{$id}) or ( defined($threads{$id}) and ! $threads{$id}->is_running() ) )
 			) {
 				$log->save('d', "start scheduler | $values->{$id}->{'current_timestamp'} | $id") if $DEBUG;
 				threads->yield();
 				$threads{$id} = threads->create(\&child, $id, $values->{$id}->{'execute'}, $conf, $log);
 			}
+
+=comm
+			my $running;
+			if ( defined($threads{$id}) and $threads{$id}->is_running() ) {
+				$running = 1;
+			} else {
+				$running = 0;
+			}
+			
+			
+			$log->save('d', "id: " . $id .
+							"  current_timestamp: ". $values->{$id}->{'current_timestamp'} .
+							"  timestamp+interval: ". ($values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}) .
+							"  enable: ". $values->{$id}->{'enable'} .
+							"  defined: ". (defined($threads{$id}) || 0) .
+							"  interval: " . $values->{$id}->{'interval'} .
+							"  is_running: ". $running
+			) if $id == 77;
+=cut
 
 			if ( $values->{$id}->{'enable'} == 0 and $values->{$id}->{'status'} == 0 ) { push @kill_id, $id; };
 			
