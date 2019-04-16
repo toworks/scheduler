@@ -371,7 +371,7 @@ package main;
   #$ENV{'PATH'} = "$ENV{'PATH'};C:\\bin\\perl\\perl\\site\\bin\\;C:\\bin\\perl\\perl\\bin\\;C:\\bin\\perl\\c\\bin\\";
 
   $| = 1; #flushing output
-  
+
   my $log = LOG->new();
 
   my $conf = CONF->new($log);
@@ -412,10 +412,16 @@ package main;
 
 			$log->save('d', "execute: ".$values->{$id}->{'execute'}) if $DEBUG;
 
+			my $running;
+			if ( defined($threads{$id}) and $threads{$id}->is_running() ) {
+				$running = 1;
+			} else {
+				$running = 0;
+			}
+
 			if( $values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'}
-				and $values->{$id}->{'enable'} == 1 and $values->{$id}->{'status'} != 0
-#				or ! defined($threads{$id}) )
-				and ( ! defined($threads{$id}) or ( defined($threads{$id}) and ! $threads{$id}->is_running() ) )
+				and $values->{$id}->{'enable'} == 1 #and $values->{$id}->{'status'} != 0
+				and $running == 0
 			) {
 				$log->save('d', "start scheduler | $values->{$id}->{'current_timestamp'} | $id") if $DEBUG;
 				threads->yield();
@@ -423,13 +429,6 @@ package main;
 			}
 
 =comm
-			my $running;
-			if ( defined($threads{$id}) and $threads{$id}->is_running() ) {
-				$running = 1;
-			} else {
-				$running = 0;
-			}
-			
 			
 			$log->save('d', "id: " . $id .
 							"  current_timestamp: ". $values->{$id}->{'current_timestamp'} .
@@ -444,15 +443,18 @@ package main;
 			if ( $values->{$id}->{'enable'} == 0 and $values->{$id}->{'status'} == 0 ) { push @kill_id, $id; };
 			
 			#$log->save('w', "id: $id  $threads{$id}") if ( ! grep { $_ eq $id } keys %threads );
-
-			if ( $values->{$id}->{'enable'} == 1 and
+=comm
+			if ( #$values->{$id}->{'current_timestamp'} > $values->{$id}->{'timestamp'}+$values->{$id}->{'interval'} and
+				 $values->{$id}->{'enable'} == 1 and
 				 $values->{$id}->{'status'} == 0 and
-				 defined($threads{$id}) and
-				 ! $threads{$id}->is_running() )
+				 $running == 0
+			)
 			{
-				$mssql->status_up(0, $id, 1);
-				#$log->save('w', "the task $id hovered") if $DEBUG;
+				#$mssql->status_up(0, $id, 1);
+				$log->save('w', "the task $id hovered") if $DEBUG;
+				$log->save('w', "the task $id hovered") if $id == 77; 
 			};
+=cut
 		}
 
 		foreach (threads->list()) {
@@ -481,7 +483,7 @@ package main;
 			}
 		}
 		#print Dumper \@kill_id;
-
+	
 		# clear
 		undef($values);
 		splice(@kill_id);
@@ -508,3 +510,5 @@ sub child {
 
 	threads->exit();
 }
+
+
