@@ -2,10 +2,10 @@
 
 sql:
     type: mssql
-    host: KRR-TST-PAHWL02
+    host: KRR-SQL-PACLX02
     database: KRR-PA-GLB-SERVICE
     table: scheduler
 
 app:
-    cycle: 1
+    cycle: 0.5
     debug: false
