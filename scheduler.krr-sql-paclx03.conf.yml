@@ -1,0 +1,11 @@
+
+
+sql:
+    type: mssql
+    host: KRR-SQL-PACLX03
+    database: KRR-PA-GLB-SERVICE
+    table: scheduler
+
+app:
+    cycle: 0.5
+    debug: false
